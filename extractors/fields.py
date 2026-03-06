@@ -1,5 +1,4 @@
 def extract_visa_requirements(jd_text):
-    """Extract visa/citizenship requirements from job description"""
     jd_lower = jd_text.lower()
     
     # Check for citizenship requirements
@@ -40,7 +39,6 @@ def extract_visa_requirements(jd_text):
 
 
 def extract_education(jd_text):
-    """Extract education level requirements"""
     jd_lower = jd_text.lower()
     
     # Check for PhD
@@ -59,7 +57,6 @@ def extract_education(jd_text):
 
 
 def extract_work_mode(jd_text):
-    """Extract work mode (remote/hybrid/onsite)"""
     jd_lower = jd_text.lower()
     
     # Check for remote
@@ -82,7 +79,6 @@ def extract_work_mode(jd_text):
 
 
 def extract_skills(jd_text):
-    """Extract technical skills from job description"""
     jd_lower = jd_text.lower()
     
     # Skill dictionary
@@ -118,7 +114,6 @@ def extract_skills(jd_text):
     return list(set(found_skills))  # Remove duplicates
 
 def extract_job_type(jd_text):
-    """Extract job type (Intern/Full-time/Part-time/Contract/Temporary)"""
     jd_lower = jd_text.lower()
     
     # Check for intern
@@ -144,8 +139,7 @@ def extract_job_type(jd_text):
     return 'Not specified'
 
 
-def extract_experience_years(jd_text):
-    """Extract required years of experience"""
+def extract_experience_years(jd_text):ss
     import re
     jd_lower = jd_text.lower()
     

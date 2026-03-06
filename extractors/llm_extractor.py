@@ -1,7 +1,3 @@
-"""
-Gemini-based field extraction for job descriptions
-"""
-
 import json
 import os
 from typing import Dict
@@ -15,7 +11,6 @@ class LLMExtractor:
     """Extract structured fields from job descriptions using Gemini"""
     
     def __init__(self, model_name: str = "gemini-3.1-flash-lite-preview"):
-        """Initialize Gemini extractor"""
         api_key = os.getenv('GEMINI_API_KEY')
         if not api_key:
             raise ValueError("GEMINI_API_KEY not found in .env file")
@@ -24,9 +19,8 @@ class LLMExtractor:
         self.model_name = model_name
     
     def extract_fields(self, job_description: str) -> Dict:
-        """Extract structured fields from job description with maximum accuracy"""
         
-        # Smart extraction: Find requirements section
+        # Find requirements section
         jd_lower = job_description.lower()
         
         # Comprehensive markers for requirements section
@@ -44,17 +38,16 @@ class LLMExtractor:
             if pos != -1 and pos < req_start:
                 req_start = pos
         
-        # MAXIMIZE context - use almost entire job description
         if len(job_description) > 8000:
             if req_start < len(job_description):
-                # Strategy: intro (2000) + COMPLETE requirements section (6000 chars)
+                # Strategy - intro (2000) + COMPLETE requirements section (6000 chars)
                 focused_desc = (
                     job_description[:2000] + 
                     "\n\n[...MIDDLE SECTION OMITTED FOR BREVITY...]\n\n" + 
                     job_description[req_start:req_start+6000]
                 )
             else:
-                # Fallback: first 4000 + last 4000
+                # Fallback first 4000 + last 4000
                 focused_desc = (
                     job_description[:4000] + 
                     "\n\n[...MIDDLE SECTION OMITTED...]\n\n" + 
@@ -64,7 +57,6 @@ class LLMExtractor:
             # Use complete description
             focused_desc = job_description
         
-        # COMPREHENSIVE PROMPT with step-by-step reasoning
         prompt = f"""You are a professional job description analyzer. Your task is to extract specific information with HIGH ACCURACY.
 
     Read the ENTIRE job description below CAREFULLY. Pay special attention to sections about requirements, qualifications, work authorization, and employment details.
@@ -178,10 +170,10 @@ class LLMExtractor:
                 model=self.model_name,
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    temperature=0.0,  # Zero temperature for maximum consistency
-                    max_output_tokens=800,  # More tokens for detailed response
-                    top_k=1,  # Most deterministic setting
-                    top_p=0.95,  # High confidence outputs only
+                    temperature=0.0, 
+                    max_output_tokens=800,  
+                    top_k=1, 
+                    top_p=0.95, 
                 )
             )
             
@@ -242,7 +234,6 @@ class LLMExtractor:
         return validated
     
     def _get_default_fields(self) -> Dict:
-        """Return default values when extraction fails"""
         return {
             'visa_requirements': 'Not specified',
             'education_required': 'Not specified',
@@ -253,20 +244,18 @@ class LLMExtractor:
         }
     
     def test_connection(self) -> bool:
-        """Test if Gemini API is working"""
         try:
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents="Say 'OK'"
             )
-            print(f"✓ Gemini API connected successfully (model: {self.model_name})")
+            print(f"Gemini API connected successfully (model: {self.model_name})")
             return True
         except Exception as e:
-            print(f"✗ Gemini API error: {e}")
+            print(f" Gemini API error: {e}")
             return False
 
-
-# Test
+#test
 if __name__ == "__main__":
     extractor = LLMExtractor()
     
@@ -274,7 +263,6 @@ if __name__ == "__main__":
         print("\nMake sure GEMINI_API_KEY is set in .env file")
         exit(1)
     
-    # Test extraction
     sample = """
     Software Engineering Intern - Summer 2026
     

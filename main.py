@@ -5,7 +5,6 @@ from extractors.llm_extractor import LLMExtractor
 from database.supabase_client import supabase
 
 def process_and_save_jobs(jobs, extractor, scraper):
-    """Process scraped jobs: deduplicate FIRST, then extract fields with LLM, then save to database"""
     saved_count = 0
     duplicate_count = 0
     error_count = 0
@@ -14,23 +13,21 @@ def process_and_save_jobs(jobs, extractor, scraper):
         try:
             print(f"\n[{i}/{len(jobs)}] Processing: {job['company']} - {job['job_title']}")
             
-            # STEP 1: Generate fingerprint FIRST
             fingerprint = scraper.generate_fingerprint(
                 job['company'],
                 job['job_title'],
                 job['location']
             )
             
-            # STEP 2: Check for duplicate BEFORE API call
             existing = supabase.table('jobs').select('id').eq('fingerprint', fingerprint).execute()
             
             if existing.data:
                 print(f"   ⊘ Duplicate (skipping - no API call)")
                 duplicate_count += 1
-                continue  # Skip to next job - saves API quota!
+                continue  # Save api call
             
-            # STEP 3: Extract fields using LLM (ONLY if not duplicate)
-            print(f"   🤖 Extracting fields with LLM...")
+
+            print(f"    Extracting fields with LLM...")
             start_time = time.time()
             extracted = extractor.extract_fields(job['job_description'])
             extraction_time = time.time() - start_time
@@ -41,7 +38,6 @@ def process_and_save_jobs(jobs, extractor, scraper):
             print(f"      Type: {extracted['job_type']} | Experience: {extracted['experience_years']}")
             print(f"      Skills: {', '.join(extracted['key_skills'][:5])}")
             
-            # STEP 4: Prepare data for database
             job_data = {
                 'fingerprint': fingerprint,
                 'source': job['source'],
@@ -59,7 +55,6 @@ def process_and_save_jobs(jobs, extractor, scraper):
                 'posted_date': job.get('posted_date', 'Not specified')
             }
             
-            # STEP 5: Save to database
             supabase.table('jobs').insert(job_data).execute()
             print(f"   💾 Saved to database")
             
@@ -89,7 +84,7 @@ def main():
         return
     
     # Initialize scraper
-    scraper = IndeedScraper(headless=False)  # Set headless=False to see browser
+    scraper = IndeedScraper(headless=False)
     
     # Scrape jobs
     print("\n[1/2] Scraping Indeed...")

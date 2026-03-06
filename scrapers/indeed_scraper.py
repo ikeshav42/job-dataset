@@ -3,7 +3,6 @@ import time
 from .base_scraper import BaseScraper
 
 class IndeedScraper(BaseScraper):
-    """Scraper for Indeed.com"""
     
     def __init__(self, headless=False):
         super().__init__(headless)
@@ -25,7 +24,7 @@ class IndeedScraper(BaseScraper):
         jobs = []
         
         with sync_playwright() as p:
-            # Launch browser with anti-detection
+            # Launch browser
             browser = p.chromium.launch(
                 headless=self.headless,
                 args=['--disable-blink-features=AutomationControlled']
@@ -108,13 +107,13 @@ class IndeedScraper(BaseScraper):
                         'location': location,
                         'job_description': description,
                         'apply_url': job_url,
-                        'posted_date': 'Last 24 hours'  # Indeed doesn't show exact date for fresh jobs
+                        'posted_date': 'Last 24 hours'
                     }
                     
                     jobs.append(job)
                     print(f"   ✓ Scraped successfully")
                     
-                    time.sleep(2)  # Be nice to Indeed
+                    time.sleep(5)
                     
                 except Exception as e:
                     print(f"   Error scraping job: {e}")

@@ -15,11 +15,7 @@ class BaseScraper:
         ]
     
     def generate_fingerprint(self, company, title, location):
-        """
-        Generate unique fingerprint for deduplication
-        Normalizes company/title/location before hashing
-        """
-        # Normalize company (remove common suffixes, lowercase, strip)
+        #Normalize company (remove common suffixes, lowercase, strip)
         company_clean = company.lower().strip()
         company_clean = company_clean.replace('inc.', '').replace('llc', '')
         company_clean = company_clean.replace(',', '').replace('.', '').strip()
@@ -27,7 +23,7 @@ class BaseScraper:
         # Normalize title (lowercase, strip)
         title_clean = title.lower().strip()
         
-        # Normalize location (lowercase, strip)
+        #Normalize location (lowercase, strip)
         location_clean = location.lower().strip()
         
         # Create fingerprint string
@@ -37,7 +33,6 @@ class BaseScraper:
         return hashlib.md5(fingerprint_str.encode()).hexdigest()
     
     def is_us_location(self, location):
-        """Check if job location is in the United States"""
         location_upper = location.upper()
         
         # Check for state codes
@@ -53,5 +48,5 @@ class BaseScraper:
         return False
     
     def scrape(self):
-        """Override this method in child classes"""
+        #Override this method in child classes
         raise NotImplementedError("Child class must implement scrape()")
