@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class LLMExtractor:
-    """Extract structured fields from job descriptions using Gemini"""
     
     def __init__(self, model_name: str = "gemini-3.1-flash-lite-preview"):
         api_key = os.getenv('GEMINI_API_KEY')

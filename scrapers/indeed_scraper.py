@@ -8,23 +8,8 @@ class IndeedScraper(BaseScraper):
         super().__init__(headless)
         self.base_url = "https://www.indeed.com/jobs"
     
-    def scrape(self, query="software engineer intern", location="United States", days=1, max_jobs=10):
-        """
-        Scrape jobs from Indeed
-        
-        Args:
-            query: Job search query
-            location: Job location
-            days: Jobs posted in last N days (1 = last 24 hours)
-            max_jobs: Maximum number of jobs to scrape
-        
-        Returns:
-            List of job dictionaries
-        """
-        jobs = []
-        
+    def scrape_generator(self, query="software engineer intern", location="United States", days=1, max_jobs=10, config=None):
         with sync_playwright() as p:
-            # Launch browser
             browser = p.chromium.launch(
                 headless=self.headless,
                 args=['--disable-blink-features=AutomationControlled']
@@ -37,88 +22,89 @@ class IndeedScraper(BaseScraper):
             
             page = context.new_page()
             
-            # Build search URL
             url = f"{self.base_url}?q={query.replace(' ', '+')}&l={location.replace(' ', '+')}&fromage={days}&sort=date"
             
-            print(f"Scraping Indeed: {url}")
             page.goto(url, wait_until='load')
             time.sleep(3)
             
-            # Wait for job cards
             try:
                 page.wait_for_selector('.job_seen_beacon', timeout=10000)
             except:
-                print("No jobs found or page didn't load")
                 browser.close()
-                return jobs
+                return
             
-            # Get all job cards
+            jobs_collected = 0
+            processed_jobs = set()
+            
+            blacklist = config.get('scraper', {}).get('blacklist_keywords', []) if config else []
+            
             job_cards = page.query_selector_all('.job_seen_beacon')
-            print(f"Found {len(job_cards)} job cards")
             
-            # Scrape each job
-            for i, card in enumerate(job_cards[:max_jobs]):
+            for card in job_cards:
+                if jobs_collected >= max_jobs:
+                    break
+                
                 try:
-                    # Extract basic info from card
                     title_elem = card.query_selector('h2.jobTitle a')
                     company_elem = card.query_selector('[data-testid="company-name"]')
                     location_elem = card.query_selector('[data-testid="text-location"]')
                     
-                    if not title_elem or not company_elem:
+                    if not (title_elem and company_elem):
                         continue
                     
-                    job_title = title_elem.inner_text()
-                    company = company_elem.inner_text()
+                    job_title = title_elem.inner_text().strip()
+                    company = company_elem.inner_text().strip()
+                    
+                    if blacklist:
+                        job_title_lower = job_title.lower()
+                        if any(keyword in job_title_lower for keyword in blacklist):
+                            continue
+                    
+                    job_id = f"{company}|{job_title}"
+                    
+                    if job_id in processed_jobs:
+                        continue
+                    
+                    processed_jobs.add(job_id)
                     
                     if location_elem:
-                        location_raw = location_elem.inner_text()
-                        location = location_raw.replace('Remote in ', '').replace('Hybrid work in ', '').replace('Onsite in ', '').strip()
+                        job_location = location_elem.inner_text().strip()
+                        job_location = job_location.replace("Remote in ", "").replace("Hybrid work in ", "").replace("Onsite in ", "")
                     else:
-                        location = "Not specified"
+                        job_location = "Not specified"
+                    
+                    if not self.is_us_location(job_location):
+                        continue
                     
                     job_url = f"https://www.indeed.com{title_elem.get_attribute('href')}"
                     
-                    # Filter: US only
-                    if not self.is_us_location(location):
-                        print(f"Skipping non-US job: {location}")
-                        continue
-                    
-                    print(f"{i+1}. {company} - {job_title}")
-                    
-                    # Click to load description
                     title_elem.scroll_into_view_if_needed()
                     time.sleep(1)
                     title_elem.click()
                     time.sleep(2)
                     
-                    # Extract full description
                     desc_elem = page.query_selector('#jobDescriptionText')
                     description = desc_elem.inner_text() if desc_elem else ""
                     
                     if not description:
-                        print(f"   No description found, skipping")
                         continue
                     
-                    # Create job object
-                    job = {
+                    job_data = {
                         'source': 'indeed',
                         'company': company,
                         'job_title': job_title,
-                        'location': location,
+                        'location': job_location,
                         'job_description': description,
                         'apply_url': job_url,
-                        'posted_date': 'Last 24 hours'
+                        'posted_date': f'Last {days} day{"s" if days > 1 else ""}'
                     }
                     
-                    jobs.append(job)
-                    print(f"   ✓ Scraped successfully")
+                    jobs_collected += 1
+                    yield job_data
                     
-                    time.sleep(5)
+                    time.sleep(2)
                     
                 except Exception as e:
-                    print(f"   Error scraping job: {e}")
                     continue
             
             browser.close()
-        
-        return jobs

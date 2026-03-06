@@ -11,7 +11,7 @@ supabase = create_client(
 
 def test_connection():
     result = supabase.table('jobs').select('*').limit(1).execute()
-    print(f"✓ Connected to Supabase! Rows: {len(result.data)}")
+    print(f"Connected to Supabase! Rows: {len(result.data)}")
 
 if __name__ == "__main__":
     test_connection()
